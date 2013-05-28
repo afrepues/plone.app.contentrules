@@ -1,3 +1,4 @@
+import Queue
 import threading
 
 from zope.component import queryUtility
@@ -79,6 +80,8 @@ def init():
         _status.rule_filter = DuplicateRuleFilter()
     if not hasattr(_status, 'delayed_events'):
         _status.delayed_events = {}
+    if not hasattr(_status, 'events_queue'):
+        _status.events_queue = Queue.Queue()
 
 
 def close(event):
@@ -89,6 +92,9 @@ def close(event):
 
     if hasattr(_status, 'delayed_events'):
         _status.delayed_events = {}
+
+    if hasattr(_status, 'events_queue'):
+        _status.events_queue = Queue.Queue()
 
 
 def execute(context, event):
@@ -106,6 +112,7 @@ def execute(context, event):
     # Stop if someone else is already executing. This could happen if,
     # for example, a rule triggered here caused another event to be fired.
     if rule_filter.in_progress:
+        _status.events_queue.put_nowait((context, event))
         return
 
     # Tell other event handlers to be equally kind
@@ -138,6 +145,13 @@ def execute(context, event):
     # We are done - other events that occur after this one will be allowed to
     # execute rules again
     rule_filter.in_progress = False
+
+    try:
+        while True:
+            ctx, ev = _status.events_queue.get_nowait()
+            execute(ctx, ev)
+    except Queue.Empty:
+        pass
 
 
 # Event handlers

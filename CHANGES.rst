@@ -4,6 +4,10 @@ Changelog
 3.0.3 (unreleased)
 ------------------
 
+- Don't discard events while processing a rule, but queue them for
+  later processing
+  [afrepues]
+
 - Support IObjectMovedEvent as a removal on the old parent and an
   addition on the new parent
   [afrepues]
