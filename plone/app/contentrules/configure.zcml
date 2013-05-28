@@ -112,6 +112,10 @@
       handler=".handlers.removed"
       />
     <subscriber
+      for="zope.lifecycleevent.interfaces.IObjectMovedEvent"
+      handler=".handlers.moved"
+      />
+    <subscriber
       for="zope.lifecycleevent.interfaces.IObjectModifiedEvent"
       handler=".handlers.modified"
       />

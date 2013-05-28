@@ -4,6 +4,10 @@ Changelog
 3.0.3 (unreleased)
 ------------------
 
+- Support IObjectMovedEvent as a removal on the old parent and an
+  addition on the new parent
+  [afrepues]
+
 - Any event can use the tales condition [thomasdesvenain]
 
 

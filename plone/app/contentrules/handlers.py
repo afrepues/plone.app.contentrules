@@ -4,6 +4,10 @@ from zope.component import queryUtility
 from zope.container.interfaces import IObjectAddedEvent, IObjectRemovedEvent,\
     IContainerModifiedEvent
 from zope.interface import Interface
+from zope.lifecycleevent import (
+    ObjectAddedEvent,
+    ObjectRemovedEvent,
+)
 
 from plone.contentrules.rule.interfaces import IRule
 from plone.contentrules.engine.interfaces import IRuleExecutor
@@ -212,6 +216,44 @@ def removed(event):
         return
 
     execute(event.oldParent, event)
+
+
+def moved(event):
+    """When an object is moved, execute rules assigned to its old and new
+    parents.
+    """
+
+    if event.oldParent is None or \
+       event.newParent is None:
+        return
+
+    obj = event.object
+    if is_portal_factory(obj):
+        return
+
+    for if_obj in (IZCLexicon, IRule):
+        ### avoids handle on adding lexicon (wich happen at each startup)
+        ### adding a content rule is not handled. avoids infinite loop
+        if if_obj.providedBy(obj):
+            return
+
+    if IBaseObject.providedBy(obj) and obj.checkCreationFlag() and \
+       event.oldParent == event.newParent:
+        # Try to ignore renames that happen during creation of ATCTs
+        # while processing IObjectMovedEvent's
+        return
+
+    removal_event = ObjectRemovedEvent(obj, event.oldParent, event.oldName)
+    execute(event.oldParent, removal_event)
+
+    addition_event = ObjectAddedEvent(
+        obj,
+        event.newParent,
+        event.newName,
+    )
+    # Avoid calling `added` as it special-cases ATCTs because of their
+    # initialization routine, but this is not needed for move events.
+    execute(event.newParent, addition_event)
 
 
 def modified(event):
